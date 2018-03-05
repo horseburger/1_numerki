@@ -331,5 +331,5 @@ double nieliniowa_t(double x)
 }
 double p_nieliniowa_t(double x)
 {
-	return 2*(sin(x)-4)*cos(x);
+	return 2*(sin(x)-2)*cos(x);
 }
