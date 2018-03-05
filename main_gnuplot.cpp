@@ -1,22 +1,31 @@
+/*
+Niniejszy program znajduje miejsca zerowe dla różnych funkcji metodą styczncych i bisekcji.
+
+Wykonane przez :
+	Jakub Zygmunt
+	Stefan Żaryń
+	FTIMS INFORMATYKA
+*/
+
 #include <iostream>
 #include <cmath>
 #include <cstring>
+#include <iomanip>
+#include <limits.h>
 #include "gnuplot_i.hpp"
+
+#define DOKLADNOSC 0
+#define ITERACJE 1
 
 using namespace std;
 
 double a,b,eps; 		//przedzialy
-int iter;				//iteracje	
-string funkcje [9]={
+int iter;				//iteracje
+string funkcje [4]={
 	"x*x-4*x",
 	"sin(x)",
 	"(2**x)-5",
-	"sin(x)*sin(x)-4*sin(x)",
-	"((2**x)-5)*((2**x)-5)-4*((2**x)-5)",
-	"sin(x*x-4*x)",
-	"sin((2**x)-5)",
-	"(2**(x*x-4*x))-5",
-	"(2**sin(x))-5"
+	"sin(x)*sin(x)-4*sin(x)"
 };						//funkcje
 
 //funkcje + jej pochodne
@@ -32,52 +41,36 @@ double p_wykladnicza(double x);
 double nieliniowa_t(double x);
 double p_nieliniowa_t(double x);
 
-double nieliniowa_w(double x);
-double p_nieliniowa_w(double x);
-
-double trygonometryczna_n(double x);
-double p_trygonometryczna_n(double x);
-
-double trygonometryczna_w(double x);
-double p_trygonometryczna_w(double x);
-
-double wykladnicza_n(double x);
-double p_wykladnicza_n(double x);
-
-double wykladnicza_t(double x);
-double p_wykladnicza_t(double x);
-
-
-
-void menu(void);
-void sub_menu();
-void wykres(double a,double b, double zer0, double(*f)(double), string nazwa);
-void wykres(string nazwa);
-void wykres(double a, double b, double zer0, double(*f)(double),double(*g)(double),string nazwa);
-void select(int & wybor);
-void metoda (double a,double b, double(*f)(double), double(*fp)(double), string nazwa);
-void podsumowanie(const double & a, const double & b);
+void menu(void); //wyswietla menu
+void wykres(double a,double b, double zer0, double(*f)(double), string nazwa); //rysuje wykres w gnuplot dla wartosci podanych przez uzytkownika
+void wykres(string nazwa); //rysuje wykres w gnuplot odpowiedniej funkcji aby uzytkownik mogl znalezc przedzial gdzie jest miejsce zerowe
+void select(int & wybor); //switch dla wybranej funkcji przez uzytkownika
+void metoda (double a,double b, double(*f)(double), double(*fp)(double), string nazwa); //uzytkownik wybiera czy chce podac wartosc epsilon czy ilosc iteracji
+void podsumowanie(const double & a, const double & b); //krotkie porownanie obu metod
 
 //bisekcja
-double bisekcja (double a, double b, double eps, double( * f )( double ));
-double bisekcja (double a, double b, int iter, double( * f )( double ));
+double w_bisekcja (double a, double b, double( * f )( double ),int wybor, double eps = -1, unsigned int iter = UINT_MAX);
 
 //styczne
-double styczne (double a, double eps, double( * f )( double ), double( * fp )( double ));
-double styczne (double a, int iter, double( * f )( double ), double( * fp )( double ));
+double w_styczne (double a,double b, double( * f )( double ), double ( * fp )( double ),int wybor, double eps=-1, unsigned int iter=UINT_MAX);
 
-int main() 
+int main()
 {
 	//
-	
+	cout << setprecision(8) << fixed;
 	int wybor;
+	char koniec;
+	cout << "Wpisz 'k' aby zakonczyc program lub dowolny klawisz aby kontynuowac : ";
+	while(cin.get(koniec) && koniec != 'k')
+	{
 	menu();
 	cin >> wybor;
 	getchar(); // Usunięcie znaku końca linii zostawionego przez cin
 	select(wybor);
-	
+	cout << "\nWpisz 'k' aby zakonczyc program lub dowolny klawisz aby kontynuowac : ";
+	}
 	//
-return 0;	
+return 0;
 }
 void metoda (double a,double b, double(*f)(double), double(*fp)(double), string nazwa)
 {
@@ -94,8 +87,8 @@ void metoda (double a,double b, double(*f)(double), double(*fp)(double), string 
 			cout << "Wartosc epsilon (zblizony do 0, np 0.0001) : ";
 			cin >> eps;
 			getchar();
-			double bis_eps = bisekcja(a,b,double(eps),f);
-			double st_eps  = styczne(a, double(eps), f, fp);
+			double bis_eps = w_bisekcja(a, b, f, 0, eps);
+			double st_eps  = w_styczne(a, b, f, fp, 0,eps);
 			if(eps)
 			{
 			wykres(a,b,bis_eps,f,nazwa+(" bisekcja"));
@@ -108,8 +101,8 @@ void metoda (double a,double b, double(*f)(double), double(*fp)(double), string 
 			cout << "Ilosc powtorzen : ";
 			cin >> iter;
 			getchar();
-			double bis_it = bisekcja(a,b,iter,f);
-			double st_it  = styczne(a, iter, f, fp);
+			double bis_it = w_bisekcja(a, b, f, 1, -1, iter);
+			double st_it  = w_styczne(a, b, f, fp, 1,-1,iter);
 			wykres(a, b, bis_it,f,nazwa+(" bisekcja"));
 			wykres(a, b, st_it, f, nazwa+(" styczne"));
 			podsumowanie(bis_it, st_it);
@@ -119,7 +112,7 @@ void metoda (double a,double b, double(*f)(double), double(*fp)(double), string 
 		cout << "Zła wartosc!\n";
 		}
 	}
-	
+
 	else
 	{
 		cout << "Funkcja nie spelnia zalozen\n";
@@ -134,12 +127,7 @@ void menu(void)
 			 << "1. Wielomian" << endl
 			 << "2. Trygnometryczna" << endl
 			 << "3. Wykladnicza" << endl
-			 << "4. Wielomian(trygonometryczna)" << endl
-			 << "5. Wielomian(wykladnicza)" << endl
-			 << "6. Trygonometryczna(wielomian)" << endl
-			 << "7. Trygonometryczna(wykladnicza)" << endl
-			 << "8. Wykladnicza(wielomian)" << endl
-			 << "9. Wykladnicza(trygonometryczna)" << endl;
+			 << "4. Wielomian(trygonometryczna)" << endl;
 }
 
 
@@ -174,11 +162,11 @@ void wykres(double a,double b,double zer0, double(*f)(double),string nazwa)
 	vector<double> zer_y(1);
 	zer_y[0] = 0;
 	zer_x[0] = zer0;
-	
+
 	wyk.set_style("points");
 	wyk.set_pointsize(5.0);
 	wyk.plot_xy(zer_x,zer_y,"Miejsca zerowe");
-	
+
 	getchar();
 }
 
@@ -228,135 +216,90 @@ void select(int & wybor)
 				metoda(a, b, nieliniowa_t, p_nieliniowa_t, funkcje[wybor-1]);
 				break;
 			}
-			case 5:
-			{
-				metoda(a, b, nieliniowa_w, p_nieliniowa_w, funkcje[wybor-1]);
-				break;
-			}
-			case 6:
-			{
-				metoda(a, b, trygonometryczna_n, p_trygonometryczna_n, funkcje[wybor-1]);
-				break;
-			}
-			case 7:
-			{
-				metoda(a, b, trygonometryczna_w, p_trygonometryczna_w,funkcje[wybor-1]);
-				break;
-			}
-			case 8:
-			{
-				metoda(a,b, wykladnicza_n, p_wykladnicza_n, funkcje[wybor-1]);
-				break;
-			}
-			case 9:
-			{
-				metoda(a,b, wykladnicza_t, p_wykladnicza_t, funkcje[wybor-1]);
-				break;
-			}
 			default:
 				cout << "Bledna wartosc\n";
 				break;
 		}
 }
-
-double bisekcja (double a, double b, double eps, double( * f )( double ))
+double w_bisekcja (double a, double b, double( * f )( double ),int wybor, double eps, unsigned int iter)
 {
-	int i=0;
+	double wymagana_dokladnosc = -1;
+	unsigned int maks_iteracji = UINT_MAX;
+	if ( DOKLADNOSC == wybor )
+	{
+		wymagana_dokladnosc = eps;
+	} else if ( ITERACJE == wybor ) {
+		maks_iteracji = iter;
+	}
 	double fa, fb, f0;
 	double zerowa;
-	fa = f(a);
-	fb = f(b);
-		while(fabs(a - b) > eps)
-			{
-				i++;
-				zerowa = (a + b) / 2.0; 
-				f0 = f(zerowa);
-				if(fabs(f0) < eps)
-				{
-				cout << "Wykonalem metoda bisekcji " << i << " iteracji\n";
-				return zerowa;
-				}
-				if(fa * f0 < 0)
-				b = zerowa;
-				else
-				{
-					a = zerowa;
-					fa = f0;
-				}
-			}
-	
-	cout << "Wykonalem metoda bisekcji " << i << " iteracji\n";
-	return zerowa;
-}	
-double bisekcja (double a, double b, int iter, double( * f )( double ))
-{
-		double fa, fb, f0;
-		double zerowa;
 		fa = f(a);
 		fb = f(b);
-			while( (iter--) > 0)
-				{
-					zerowa = (a + b) / 2.0; 
-					f0 = f(zerowa);
-					if(fabs(f0) == 0)
-					return zerowa;
-					if(fa * f0 < 0)
-					b = zerowa;
-					else
-					{
-						a = zerowa;
-						fa = f0;
-					}
-				}
+	double aktualna_dokladnosc = fabs(a - b);
+	int ilosc_iteracji = 0;
+
+	 while ( ( ilosc_iteracji < maks_iteracji ) && ( aktualna_dokladnosc > wymagana_dokladnosc ) )
+			{
+			ilosc_iteracji++;
+			zerowa = (a + b) / 2.0;
+			f0 = f(zerowa);
+			if(fabs(f0) <= wymagana_dokladnosc)
+			{
+			cout << "Wykonalem metoda bisekcji " << ilosc_iteracji << " iteracji\n";
 			return zerowa;
-}
-double styczne (double a, double eps, double( * f )( double ), double ( * fp )( double ))
-{
-	int i =0;
-	double x, f0, f1;
-	x = a - 1; 
-	f0 = f(a); 
-		while ((fabs(x - a) > eps) && (fabs(f0) > eps))
-		{
-			f1 = fp(a);
-			if(fabs(f1) < eps)
-			{
-				cout << "Zly punkt startowy\n";
-				break;
 			}
-			x = a;
-			a = a - (f0 / f1);
-			f0 = f(a);
-			i++;
-		}
-		cout << "Wykonalem metoda stycznych " << i << " iteracji\n";
-	return x;
-}
-double styczne (double a, int iter, double( * f )( double ), double( * fp )( double ))
-{
-	double x, f0, f1;
-	x = a - 1; 
-	f0 = f(a); 
-		while (iter--)
-		{
-			f1 = fp(a);
-			if(fabs(f1) == 0)
+			if(fa * f0 < 0)
+			b = zerowa;
+			else
 			{
-				cout << "Zly punkt startowy\n";
-				break;
+				a = zerowa;
+				fa = f0;
 			}
-			x = a;
-			a = a - (f0 / f1);
-			f0 = f(a);
+			}
+			cout << "Wykonalem metoda bisekcji " << ilosc_iteracji << " iteracji\n";
+			return zerowa;
+
+
+}
+double w_styczne (double a,double b, double( * f )( double ), double ( * fp )( double ),int wybor, double eps, unsigned int iter)
+{
+		double wymagana_dokladnosc = -1;
+		unsigned int maks_iteracji = UINT_MAX;
+		if ( DOKLADNOSC == wybor )
+		{
+			wymagana_dokladnosc = eps;
+		} else if ( ITERACJE == wybor ) {
+			maks_iteracji = iter;
 		}
-	return x;
+		double x0,x1,f0,f1;
+		x0=a;
+		x1 = x0 - 1;
+		f0 = f(x0);
+		unsigned int ilosc_iteracji = 0;
+
+		 while ( ( ilosc_iteracji < maks_iteracji ) && ( fabs(f0) > wymagana_dokladnosc ) && (fabs(x1 - x0) > wymagana_dokladnosc ))
+				{
+						ilosc_iteracji++;
+						f1 = fp(x0);
+						if(fabs(f1) < wymagana_dokladnosc)
+						{
+							cout << "Zly punkt startowy dla metody stycznych";
+							ilosc_iteracji = UINT_MAX;
+						}
+						x1 = x0;
+						x0 = x0 - (f0 / f1);
+						f0 = f(x0);
+				}
+				cout << "Wykonalem metoda stycznych " << ilosc_iteracji << " iteracji\n";
+				return x0;
+
 }
 void podsumowanie(const double & a, const double & b)
 {
 	cout << "Miejsce zerowe dla metody bisekcji : " << a << endl ;
 	cout << "Miejsce zerowe dla metody stycznych : " << b << endl ;
 	double x = fabs(a-b);
-	cout << "Roznica wynikow metod bisekcji i stycznych to : " << x << endl ;	
+	cout << "Roznica wynikow metod bisekcji i stycznych to : " << x << endl ;
 }
 double fun_nieliniowa(double x)
 {
@@ -390,45 +333,3 @@ double p_nieliniowa_t(double x)
 {
 	return 2*(sin(x)-4)*cos(x);
 }
-double nieliniowa_w(double x)
-{
-	return ((pow(2,x)-5)*(pow(2,x)-5)-4*(pow(2,x)-5));
-}
-double p_nieliniowa_w(double x)
-{
-	return (pow(2,x+1)*(pow(2,x)-2)*log(2));
-}
-double trygonometryczna_n(double x)
-{
-	return sin(x*x-4*x);
-}
-double p_trygonometryczna_n(double x)
-{
-	return (2*(x-2)*cos(x*(x-4)));
-}
-double trygonometryczna_w(double x)
-{
-	return sin(pow(2,x)-5);
-}
-double p_trygonometryczna_w(double x)
-{
-	return pow(2,x)*log(2)*cos(pow(2,x)-5);
-}
-double wykladnicza_n(double x)
-{
-	return pow(2,x*x-4*x);
-}
-double p_wykladnicza_n(double x)
-{
-	return pow(2,x*x-4*x+1)*log(2)*(x-2);
-}
-double wykladnicza_t(double x)
-{
-	return pow(2,sin(x));
-}
-double p_wykladnicza_t(double x)
-{
-	return log(2)*pow(2,sin(x))*cos(x);
-}
-
-	
