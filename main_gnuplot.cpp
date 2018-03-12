@@ -23,9 +23,9 @@ double a,b,eps; 		//przedzialy
 int iter;				//iteracje
 string funkcje [4]={
 	"x*x-4*x",
-	"sin(x)",
+	"x*x*x+8",
 	"(2**x)-5",
-	"sin(x)*sin(x)-4*sin(x)"
+	"(sin(x)*sin(x))-(4*sin(x))"
 };						//funkcje
 
 //funkcje + jej pochodne
@@ -57,7 +57,7 @@ double w_styczne (double a,double b, double( * f )( double ), double ( * fp )( d
 int main()
 {
 	//
-	cout << setprecision(8) << fixed;
+	cout << setprecision(4) << fixed;
 	int wybor;
 	char koniec;
 	cout << "Wpisz 'k' aby zakonczyc program lub dowolny klawisz aby kontynuowac : ";
@@ -245,6 +245,7 @@ double w_bisekcja (double a, double b, double( * f )( double ),int wybor, double
 			f0 = f(zerowa);
 			if(fabs(f0) <= wymagana_dokladnosc)
 			{
+			cout << "Iteracja nr : " << ilosc_iteracji << " wartosc dla bisekcji : " << zerowa << endl;
 			cout << "Wykonalem metoda bisekcji " << ilosc_iteracji << " iteracji\n";
 			return zerowa;
 			}
@@ -255,6 +256,7 @@ double w_bisekcja (double a, double b, double( * f )( double ),int wybor, double
 				a = zerowa;
 				fa = f0;
 			}
+			cout << "Iteracja nr : " << ilosc_iteracji << " wartosc dla bisekcji : " << zerowa << endl;
 			}
 			cout << "Wykonalem metoda bisekcji " << ilosc_iteracji << " iteracji\n";
 			return zerowa;
@@ -289,6 +291,7 @@ double w_styczne (double a,double b, double( * f )( double ), double ( * fp )( d
 						x1 = x0;
 						x0 = x0 - (f0 / f1);
 						f0 = f(x0);
+						cout << "Iteracja nr : " << ilosc_iteracji << " wartosc dla stycznychę : " << x0 << endl;
 				}
 				cout << "Wykonalem metoda stycznych " << ilosc_iteracji << " iteracji\n";
 				return x0;
@@ -301,21 +304,17 @@ void podsumowanie(const double & a, const double & b)
 	double x = fabs(a-b);
 	cout << "Roznica wynikow metod bisekcji i stycznych to : " << x << endl ;
 }
-double fun_nieliniowa(double x)
-{
-	return (x*x) - (4*x);
-}
 double p_fun_nieliniowa(double x)
 {
 	return 2*x - 4;
 }
 double trygonmetryczna(double x)
 {
-	return sin(x);
+	return x*x*x+8;
 }
 double p_trygonmetryczna(double x)
 {
-	return cos(x);
+	return 3*x*x;
 }
 double wykladnicza(double x)
 {
@@ -327,9 +326,20 @@ double p_wykladnicza(double x)
 }
 double nieliniowa_t(double x)
 {
-	return sin(x)*sin(x)-4*sin(x);
+	return (sin(x)*sin(x))-(4*sin(x));
 }
 double p_nieliniowa_t(double x)
 {
 	return 2*(sin(x)-2)*cos(x);
+}
+double fun_nieliniowa(double x)
+{
+	int st=2;
+	double wsp[3]={1,-4,0};
+	double wynik = wsp[0];
+
+	for(int i=1;i<=st;i++)
+		wynik = wynik*x + wsp[i];
+		
+	return wynik;
 }
